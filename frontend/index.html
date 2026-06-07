@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UPScholar - Búsqueda de Artículos</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 0; padding: 0; color: #202124; background-color: #ffffff; }
+        .header { display: flex; align-items: center; padding: 20px 30px; border-bottom: 1px solid #dfe1e5; background-color: #fafafa; }
+        .logo { font-size: 24px; color: #4285f4; font-weight: bold; margin-right: 40px; text-decoration: none; }
+        .logo span { color: #ea4335; } 
+        .logo span.blue { color: #4285f4; }
+        .logo span.yellow { color: #fbbc05; }
+        .logo span.green { color: #34a853; }
+        .search-form { display: flex; width: 100%; max-width: 650px; position: relative; }
+        .search-input { flex-grow: 1; padding: 12px 20px; border: 1px solid #dfe1e5; border-radius: 24px 0 0 24px; outline: none; font-size: 16px; box-shadow: 0 1px 6px rgba(32,33,36,.28); }
+        .search-input:focus { border-color: rgba(223,225,229,0); }
+        .search-btn { padding: 0 25px; background: #4285f4; border: 1px solid #4285f4; border-radius: 0 24px 24px 0; color: white; cursor: pointer; font-size: 15px; font-weight: bold; }
+        .search-btn:hover { background: #3b78e7; box-shadow: 0 1px 1px rgba(0,0,0,0.1); }
+        .method-select { margin-left: 15px; padding: 10px; border: 1px solid #dfe1e5; border-radius: 4px; background-color: white; outline: none; font-size: 14px; color: #4d5156; }
+        .main-container { display: flex; padding: 20px 30px; }
+        .sidebar { width: 220px; margin-right: 40px; font-size: 13px; color: #70757a; }
+        .sidebar ul { list-style: none; padding: 0; }
+        .sidebar li { margin-bottom: 12px; cursor: pointer; }
+        .sidebar li:hover { text-decoration: underline; }
+        
+        /* CLASES LIMPIAS PARA LOS BOTONES DE FILTRO */
+        .filter-btn { text-decoration: none; display: block; line-height: 1.4; color: #70757a; }
+        .filter-btn:hover { color: #202124; }
+        .filter-btn-active { text-decoration: none; display: block; line-height: 1.4; color: #d93025; font-weight: bold; }
+
+        .results-area { flex-grow: 1; max-width: 700px; }
+        .result-count { color: #70757a; font-size: 14px; margin-bottom: 20px; }
+        .result-item { margin-bottom: 30px; }
+        .result-title { color: #1a0dab; font-size: 18px; text-decoration: none; display: inline-block; margin-bottom: 3px; }
+        .result-title:hover { text-decoration: underline; }
+        
+        .score-badge { display: inline-block; background-color: #e8f0fe; color: #1967d2; padding: 2px 6px; border-radius: 4px; font-size: 12px; margin-left: 10px; font-weight: bold; vertical-align: middle; }
+        .rec-score-badge { background-color: #fce8e6; color: #d93025; padding: 2px 5px; border-radius: 4px; font-size: 11px; margin-right: 5px; font-weight: bold; }
+        .result-meta { color: #006621; font-size: 14px; margin-bottom: 4px; }
+        .result-abstract { font-size: 14px; color: #4d5156; line-height: 1.5; margin-bottom: 8px; }
+        
+        .related-btn { background-color: white; border: 1px solid #dadce0; color: #1a73e8; padding: 6px 15px; border-radius: 15px; cursor: pointer; font-size: 13px; font-weight: bold; transition: background-color 0.2s; display: flex; align-items: center; gap: 5px; }
+        .related-btn:hover { background-color: #f8f9fa; }
+        .recommendations { margin-top: 10px; padding: 12px 15px; background-color: #f8f9fa; border-left: 3px solid #dadce0; border-radius: 0 4px 4px 0; }
+        .rec-header { font-size: 13px; color: #70757a; margin-bottom: 8px; font-weight: bold; }
+        .rec-item { font-size: 13px; margin-bottom: 8px; }
+        .rec-item a { color: #1a0dab; text-decoration: none; }
+        .rec-item a:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <a href="/" class="logo">
+            <span class="blue">U</span><span class="yellow">P</span><span class="green">S</span>cholar
+        </a>
+        <form action="/buscar" method="get" class="search-form">
+            <input type="text" name="q" class="search-input" value="{{ query if query else '' }}" placeholder="Buscar artículos científicos..." required>
+            <button type="submit" class="search-btn">Buscar</button>
+            <select name="metodo" class="method-select">
+                <option value="llm" {% if metodo == 'llm' %}selected{% endif %}>Modelo LLM</option>
+                <option value="tradicional" {% if metodo == 'tradicional' %}selected{% endif %}>Matemático (TF-IDF)</option>
+            </select>
+        </form>
+    </div>
+
+    <div class="main-container">
+        <div class="sidebar">
+            {% if query %}
+                <h3 style="font-size: 14px; color: #202124; margin-bottom: 12px; margin-top: 0;">Filtrar por Sesión</h3>
+                <ul style="list-style: none; padding: 0;">
+                    
+                    <li style="margin-bottom: 10px;">
+                        {% if not sesion_actual %}
+                            <a href="/buscar?q={{ query }}&metodo={{ metodo }}" class="filter-btn-active">Cualquier sesión</a>
+                        {% else %}
+                            <a href="/buscar?q={{ query }}&metodo={{ metodo }}" class="filter-btn">Cualquier sesión</a>
+                        {% endif %}
+                    </li>
+                    
+                    <hr style="border: 0; border-top: 1px solid #ebebeb; margin: 10px 0;">
+                    
+                    {% for s in sesiones_disponibles %}
+                    <li style="margin-bottom: 12px;">
+                        {% if sesion_actual == s %}
+                            <a href="/buscar?q={{ query }}&metodo={{ metodo }}&sesion={{ s }}" class="filter-btn-active">
+                                {{ s.replace('Special Session ', 'SS ') }}
+                            </a>
+                        {% else %}
+                            <a href="/buscar?q={{ query }}&metodo={{ metodo }}&sesion={{ s }}" class="filter-btn">
+                                {{ s.replace('Special Session ', 'SS ') }}
+                            </a>
+                        {% endif %}
+                    </li>
+                    {% endfor %}
+                    
+                </ul>
+            {% else %}
+                <ul style="color: #9aa0a6;">
+                    <li>Realiza una búsqueda para activar los filtros de las sesiones del ICMLA.</li>
+                </ul>
+            {% endif %}
+        </div>
+
+        <div class="results-area">
+            {% if query %}
+                <div class="result-count">
+                    Cerca de {{ resultados|length }} resultados para <strong>{{ query }}</strong> ({{ tiempo_busqueda }} segundos)<br>
+                    <small style="color: #70757a; font-size: 12px;">Método de búsqueda: {{ "Inteligencia Artificial (LLM)" if metodo == 'llm' else "Matemático Clásico (TF-IDF)" }}</small>
+                </div>
+            {% endif %}
+
+            {% if resultados %}
+                {% for res in resultados %}
+                <div class="result-item">
+                    <a href="/paper/{{ res.id }}" target="_blank" class="result-title">[PDF] {{ res.titulo }}</a>
+                    <span class="score-badge">Similitud: {{ res.similitud }}</span>
+                    
+                    <div class="result-meta">ICMLA 2024 - ieeexplore.ieee.org</div>
+                    <div class="result-abstract">{{ res.abstract[:280] }}...</div>
+                    
+                    <button class="related-btn" onclick="toggleRecomendaciones('rec-{{ loop.index }}')">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+                        Artículos Relacionados (3)
+                    </button>
+                    
+                    <div id="rec-{{ loop.index }}" class="recommendations" style="display: none;">
+                        <div class="rec-header">Los 3 artículos más similares a esta lectura:</div>
+                        {% for rec in res.recomendaciones %}
+                            <div class="rec-item">
+                                <span class="rec-score-badge">{{ rec.similitud }}</span>
+                                <a href="/paper/{{ rec.id }}" target="_blank">{{ rec.titulo }}</a>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endfor %}
+            {% elif query %}
+                <p>No se encontraron resultados en esta sesión para tu búsqueda.</p>
+            {% else %}
+                <div style="text-align: center; margin-top: 50px; color: #70757a;">
+                    <h2>Bienvenido a UPScholar</h2>
+                    <p>Ingresa un término de búsqueda para comenzar.</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <script>
+        function toggleRecomendaciones(id) {
+            var elemento = document.getElementById(id);
+            if (elemento.style.display === "none") {
+                elemento.style.display = "block";
+            } else {
+                elemento.style.display = "none";
+            }
+        }
+    </script>
+</body>
+</html>
