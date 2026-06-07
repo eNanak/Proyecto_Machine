@@ -1,7 +1,0 @@
-fastapi
-uvicorn
-pandas
-sentence-transformers
-scikit-learn
-jinja2
-python-multipart
