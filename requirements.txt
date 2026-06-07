@@ -1,0 +1,8 @@
+GNU nano 8.4                                  requirements.txt
+fastapi
+uvicorn
+pandas
+sentence-transformers
+scikit-learn
+jinja2
+python-multipart
